@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <conio.h>
+
 
 #define WIDTH 10
 #define HEIGHT 20
@@ -8,6 +10,7 @@
 int board[HEIGHT][WIDTH];
 int updateDelayCounter = 0;
 int score = 0;
+char gameOpen = 1;
 
 
 void initializeBoard();
@@ -20,7 +23,15 @@ int main(int argc, char * argv[]){
 
     initializeBoard();
     printBoard();
-    while(1){
+    while(gameOpen){
+        
+
+        if (_kbhit()) {             // check if a key is pressed
+            char c = _getch();      // get char without waiting for Enter
+            printf("Game Exited\n");
+            if (c == 'q') break;
+        }
+
         updateBoard();
     }
     
@@ -68,7 +79,6 @@ void updateBoard(){
 
     for(int i = HEIGHT-1; i>0; i--){
         char found = 1;
-        // printf("checking row %d\n", i);
         for(int j = 0; j<WIDTH; j++ ){
             if(board[i][j] == 0){
                 found = 0;
@@ -84,9 +94,6 @@ void updateBoard(){
     }
 
     score += clearedLines * 100;
-
-    
-    
 
     if(fallCheck()){
         for(int i = HEIGHT-1; i> 0; i--){
@@ -118,8 +125,6 @@ void clearRow(int row){
     for(int j = 0; j<WIDTH; j++){
         board[0][j] = 0;
     }
-
-    // printf("cleared row: %d\n", row);
 }
 
 char fallCheck(){
