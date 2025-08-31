@@ -11,13 +11,23 @@ int board[HEIGHT][WIDTH];
 int updateDelayCounter = 0;
 int score = 0;
 char gameOpen = 1;
+// int current_x = WIDTH/2;
+// int current_y = 0;
 
+// typedef struct{
+//     char shape;
+//     int x;
+//     int y;
+// } piece;
+
+// piece myPiece = {.shape = 'l' .x = WIDTH/2 .y=0};
 
 void initializeBoard();
 void printBoard();
 void updateBoard();
 void clearRow(int row);
 char fallCheck();
+void initializePiece();
 
 int main(int argc, char * argv[]){
 
@@ -28,12 +38,16 @@ int main(int argc, char * argv[]){
 
         if (_kbhit()) {             // check if a key is pressed
             char c = _getch();      // get char without waiting for Enter
-            printf("Game Exited\n");
-            if (c == 'q') break;
+            if (c == 'q'){
+                gameOpen = 0;
+                
+            }
         }
 
         updateBoard();
     }
+
+    printf("Game Exited\n");
     
 }
 
@@ -52,6 +66,7 @@ void initializeBoard(){
     board[8][8] = 1;
     board[7][7] = 1;
     board[6][6] = 1;
+    board[11][5] = 0;
 }
 
 void printBoard(){
@@ -134,4 +149,9 @@ char fallCheck(){
         }
     }
     return 1;
+}
+
+void initializePiece(){
+    int current_x = WIDTH/2;
+    int current_y = 0;
 }
