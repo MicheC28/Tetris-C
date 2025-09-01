@@ -1,11 +1,180 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <conio.h>
+// #include "shapes.c"
 
 
 #define WIDTH 10
 #define HEIGHT 20
 #define UPDATEDELAY 1500000
+
+typedef struct {
+    int rotations;
+    int view[4][5][5]; // up to 4 rotations, each 5x5
+} Shape;
+
+Shape shapes[7] = {
+    // Vertical Block (I)
+    {2, {
+        {
+            {0,0,0,0,0},
+            {0,0,0,0,0},
+            {0,0,0,0,0},
+            {1,1,1,1,0},
+            {0,0,0,0,0}
+        },
+        {
+            {0,0,0,0,0},
+            {0,0,1,0,0},
+            {0,0,1,0,0},
+            {0,0,1,0,0},
+            {0,0,1,0,0}
+        }
+    }},
+    
+    // T Block
+    {4, {
+        {
+            {0,0,0,0,0},
+            {0,0,0,0,0},
+            {0,0,1,0,0},
+            {0,1,1,1,0},
+            {0,0,0,0,0}
+        },
+        {
+            {0,0,0,0,0},
+            {0,0,1,0,0},
+            {0,1,1,0,0},
+            {0,0,1,0,0},
+            {0,0,0,0,0}
+        },
+        {
+            {0,0,0,0,0},
+            {0,0,0,0,0},
+            {0,1,1,1,0},
+            {0,0,1,0,0},
+            {0,0,0,0,0}
+        },
+        {
+            {0,0,0,0,0},
+            {0,0,1,0,0},
+            {0,0,1,1,0},
+            {0,0,1,0,0},
+            {0,0,0,0,0}
+        }
+    }},
+
+    // L Block
+    {4, {
+        {
+            {0,0,0,0,0},
+            {0,0,1,0,0},
+            {0,0,1,0,0},
+            {0,0,1,1,0},
+            {0,0,0,0,0}
+        },
+        {
+            {0,0,0,0,0},
+            {0,0,0,1,0},
+            {0,1,1,1,0},
+            {0,0,0,0,0},
+            {0,0,0,0,0}
+        },
+        {
+            {0,0,0,0,0},
+            {0,1,1,0,0},
+            {0,0,1,0,0},
+            {0,0,1,0,0},
+            {0,0,0,0,0}
+        },
+        {
+            {0,0,0,0,0},
+            {0,0,0,0,0},
+            {0,1,1,1,0},
+            {0,1,0,0,0},
+            {0,0,0,0,0}
+        }
+    }},
+
+    // Reverse L Block
+    {4, {
+        {
+            {0,0,0,0,0},
+            {0,0,1,0,0},
+            {0,0,1,0,0},
+            {0,1,1,0,0},
+            {0,0,0,0,0}
+        },
+        {
+            {0,0,0,0,0},
+            {0,0,0,1,0},
+            {0,1,1,1,0},
+            {0,0,0,0,0},
+            {0,0,0,0,0}
+        },
+        {
+            {0,0,0,0,0},
+            {0,1,1,0,0},
+            {0,0,1,0,0},
+            {0,0,1,0,0},
+            {0,0,0,0,0}
+        },
+        {
+            {0,0,0,0,0},
+            {0,0,0,0,0},
+            {0,1,1,1,0},
+            {0,1,0,0,0},
+            {0,0,0,0,0}
+        }
+    }},
+
+    // Zig Block (S)
+    {2, {
+        {
+            {0,0,0,0,0},
+            {0,1,0,0,0},
+            {0,1,1,0,0},
+            {0,0,1,0,0},
+            {0,0,0,0,0}
+        },
+        {
+            {0,0,0,0,0},
+            {0,0,0,0,0},
+            {0,0,1,1,0},
+            {0,1,1,0,0},
+            {0,0,0,0,0}
+        }
+    }},
+
+    // Zag Block (Z)
+    {2, {
+        {
+            {0,0,0,0,0},
+            {0,0,1,0,0},
+            {0,1,1,0,0},
+            {0,1,0,0,0},
+            {0,0,0,0,0}
+        },
+        {
+            {0,0,0,0,0},
+            {0,0,0,0,0},
+            {0,1,1,0,0},
+            {0,0,1,1,0},
+            {0,0,0,0,0}
+        }
+    }},
+
+    // Square Block (O)
+    {1, {
+        {
+            {0,0,0,0,0},
+            {0,0,0,0,0},
+            {0,1,1,0,0},
+            {0,1,1,0,0},
+            {0,0,0,0,0}
+        }
+    }}
+};
 
 int board[HEIGHT][WIDTH];
 int updateDelayCounter = 0;
@@ -14,13 +183,15 @@ char gameOpen = 1;
 // int current_x = WIDTH/2;
 // int current_y = 0;
 
-// typedef struct{
-//     char shape;
-//     int x;
-//     int y;
-// } piece;
+typedef struct{
+    char shape;
+    char rotation;
+    int x;
+    int y;
 
-// piece myPiece = {.shape = 'l' .x = WIDTH/2 .y=0};
+} piece;
+
+piece myPiece = {.shape = 1, .rotation=0, .x = WIDTH/2, .y=0};
 
 void initializeBoard();
 void printBoard();
@@ -28,11 +199,17 @@ void updateBoard();
 void clearRow(int row);
 char fallCheck();
 void initializePiece();
+void drawPiece();
+void updatePiece();
 
 int main(int argc, char * argv[]){
 
     initializeBoard();
     printBoard();
+    initializePiece();
+    usleep(UPDATEDELAY);
+    // drawPiece();
+
     while(gameOpen){
         
 
@@ -44,7 +221,11 @@ int main(int argc, char * argv[]){
             }
         }
 
+        
+        // drawPiece();
+        updatePiece();
         updateBoard();
+        
     }
 
     printf("Game Exited\n");
@@ -90,6 +271,8 @@ void printBoard(){
 
 void updateBoard(){
 
+    
+
     int clearedLines = 0;
 
     for(int i = HEIGHT-1; i>0; i--){
@@ -120,9 +303,11 @@ void updateBoard(){
         for(int j = 0; j<WIDTH; j++){
             board[0][j] = 0;
         }
+
+        
     }
     
-
+    drawPiece();
     printBoard();
     usleep(UPDATEDELAY);
     
@@ -152,6 +337,39 @@ char fallCheck(){
 }
 
 void initializePiece(){
-    int current_x = WIDTH/2;
-    int current_y = 0;
+    // int current_x = WIDTH/2;
+    // int current_y = 0;
+    myPiece.x = WIDTH/2;
+    myPiece.y = 0;
 }
+
+void drawPiece(){
+    for(int i = 0; i < 5; i++){
+        for (int j = 0; j< 5; j++){
+            if (shapes[myPiece.shape].view[myPiece.rotation][i][j] == 1){
+                board[myPiece.y + i][myPiece.x + j] = 1;
+            }
+        }
+    }
+}
+
+void updatePiece(){
+
+    for(int i = 0; i<5; i++){
+        for (int j =0; j<5; j++){
+            if (shapes[myPiece.shape].view[myPiece.rotation][i][j] == 1){
+                board[myPiece.y + i][myPiece.x + j] = 0;
+            }
+        }
+    }
+
+    myPiece.y ++;
+}
+
+
+
+
+
+
+
+
