@@ -218,12 +218,14 @@ int main(){
 
             switch(c){
                 case 'q': gameOpen = 0; break;
+                case 'Q': gameOpen = 0; break;
                 case UP: movePiece(0, 0, 1); break;
                 case DOWN: movePiece(0, 1, 0); break;
                 case LEFT: movePiece(-1, 0, 0); break;
                 case RIGHT: movePiece(1, 0, 0); break;
                 case SPACE: while(movePiece(0,1,0)); break; // hard drop
                 case 'c': switchToHold(); break;
+                case 'C': switchToHold(); break;
             }
         }
 
