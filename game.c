@@ -4,7 +4,7 @@
 
 #define WIDTH 10
 #define HEIGHT 20
-#define UPDATEDELAY 300 // milliseconds
+#define UPDATEDELAY 400// milliseconds
 
 #define UP 72
 #define DOWN 80
@@ -198,7 +198,7 @@ void initializeBoard();
 void printBoard();
 void updateBoard();
 void clearRow(int row);
-char moveCheck(int x, int y, int rotation);
+char moveCheck(piece Piece,int x, int y, int rotation);
 char movePiece(int x, int y, int rotation);
 void initializePiece();
 
@@ -224,7 +224,7 @@ int main(){
         }
 
         // automatically move piece down
-        if(moveCheck(0, 1, 0)){
+        if(moveCheck(myPiece,0, 1, 0)){
             myPiece.y++;
         } else {
             // piece landed → fix it on board
@@ -243,7 +243,7 @@ int main(){
             updateBoard();
             // new piece
             initializePiece();
-            if(!moveCheck(0,0,0)){
+            if(!moveCheck(myPiece,0,0,0)){
                 gameOpen = 0; // game over
             }
         }
@@ -274,6 +274,12 @@ void initializePiece(){
 void printBoard(){
     printf("\033[H\033[J"); // clear terminal
 
+    piece ghostPiece = myPiece;
+
+    while(moveCheck(ghostPiece,0,1,0)){
+        ghostPiece.y++;
+    }
+
     for(int i=0;i<HEIGHT;i++){
         for(int j=0;j<WIDTH;j++){
             char cell = board[i][j];
@@ -281,28 +287,40 @@ void printBoard(){
             // Overlay current piece
             int relY = i - myPiece.y;
             int relX = j - myPiece.x;
+            int relGhostY = i - ghostPiece.y;
+            int relGhostX = j - ghostPiece.x;
             if(relY >=0 && relY <5 && relX >=0 && relX <5){
                 if(shapes[myPiece.shape].view[myPiece.rotation][relY][relX] == 1){
                     cell = 1;
                 }
             }
-
-            if(cell) printf("|%c%c", 219, 219);
+            if(relGhostY >=0 && relGhostY <5 && relGhostX >=0 && relGhostX <5){
+                if(shapes[myPiece.shape].view[ghostPiece.rotation][relGhostY][relGhostX] == 1 && cell == 0){
+                    cell = 2; // ghost piece
+                }
+            }
+            
+            if(cell == 1) printf("|%c%c", 219, 219);
+            else if(cell == 2) printf("|%c%c", 176, 176);
             else printf("|  ");
         }
-        printf("|\n");
+            
+            printf("|\n");
+        
+
+        
     }
     printf("\nScore: %d\n", score);
 }
 
-char moveCheck(int x, int y, int rotation){
-    int tempX = myPiece.x + x;
-    int tempY = myPiece.y + y;
-    int tempRot = (myPiece.rotation + rotation) % shapes[myPiece.shape].rotations;
+char moveCheck(piece Piece,int x, int y, int rotation){
+    int tempX = Piece.x + x;
+    int tempY = Piece.y + y;
+    int tempRot = (Piece.rotation + rotation) % shapes[Piece.shape].rotations;
 
     for(int i=0;i<5;i++){
         for(int j=0;j<5;j++){
-            if(shapes[myPiece.shape].view[tempRot][i][j]){
+            if(shapes[Piece.shape].view[tempRot][i][j]){
                 int boardX = tempX + j;
                 int boardY = tempY + i;
 
@@ -316,7 +334,7 @@ char moveCheck(int x, int y, int rotation){
 }
 
 char movePiece(int x, int y, int rotation){
-    if(moveCheck(x,y,rotation)){
+    if(moveCheck(myPiece,x,y,rotation)){
         myPiece.x += x;
         myPiece.y += y;
         myPiece.rotation = (myPiece.rotation + rotation) % shapes[myPiece.shape].rotations;
