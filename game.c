@@ -1,8 +1,6 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <conio.h>
-// #include "shapes.c"
-
 
 #define WIDTH 10
 #define HEIGHT 20
@@ -191,7 +189,7 @@ typedef struct{
 
 } piece;
 
-piece myPiece = {.shape = 1, .rotation=0, .x = WIDTH/2, .y=0};
+piece myPiece = {.shape = 1, .rotation=1, .x = WIDTH/2, .y=0};
 
 void initializeBoard();
 void printBoard();
@@ -200,7 +198,9 @@ void clearRow(int row);
 char fallCheck();
 void initializePiece();
 void drawPiece();
+void removePiece();
 void updatePiece();
+char moveCheck(int x, int y, int rotation);
 
 int main(int argc, char * argv[]){
 
@@ -223,7 +223,11 @@ int main(int argc, char * argv[]){
 
         
         // drawPiece();
-        updatePiece();
+        if(moveCheck(0, 1, 0)){
+            updatePiece();  
+            printf("updated\n");  
+        }
+        
         updateBoard();
         
     }
@@ -353,8 +357,7 @@ void drawPiece(){
     }
 }
 
-void updatePiece(){
-
+void removePiece(){
     for(int i = 0; i<5; i++){
         for (int j =0; j<5; j++){
             if (shapes[myPiece.shape].view[myPiece.rotation][i][j] == 1){
@@ -362,11 +365,45 @@ void updatePiece(){
             }
         }
     }
+}
+void updatePiece(){
+
+    removePiece();
 
     myPiece.y ++;
 }
 
+char moveCheck(int x, int y, int rotation){
+    int temp_x = myPiece.x + x;
+    int temp_y = myPiece.y + y;
+    int temp_rotation = (myPiece.rotation + rotation) % shapes[myPiece.shape].rotations;
+    
+    piece tempPiece = {.shape = myPiece.shape, .x=temp_x, .y=temp_y, .rotation=temp_rotation};
 
+    removePiece();
+
+    for(int i =0; i<5; i++){
+        for (int j = 0; j<5; j++){
+            if(shapes[tempPiece.shape].view[tempPiece.rotation][i][j] == 1){
+                int temp_board_y = tempPiece.y + i;
+                int temp_board_x = tempPiece.x + j;
+
+                
+
+                if(temp_board_y < 0 || temp_board_y >= HEIGHT || temp_board_x < 0 || temp_board_x >= WIDTH || ((board[temp_board_y][temp_board_x] == 1))){
+                    printf("collision at %d, %d\n", temp_board_x, temp_board_y);
+                    drawPiece();
+                    return 0;
+                }
+
+            }
+        }
+    }
+
+    drawPiece();
+
+    return 1;
+}
 
 
 
