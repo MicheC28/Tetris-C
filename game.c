@@ -193,6 +193,8 @@ typedef struct{
 
 piece myPiece = {.shape = 0, .rotation = 0, .x = WIDTH/2, .y = 0};
 
+piece holdPiece = {.shape = -1, .rotation = 0, .x = 0, .y = 0};
+
 // Function prototypes
 void initializeBoard();
 void printBoard();
@@ -201,6 +203,7 @@ void clearRow(int row);
 char moveCheck(piece Piece,int x, int y, int rotation);
 char movePiece(int x, int y, int rotation);
 void initializePiece();
+void switchToHold();
 
 int main(){
 
@@ -220,6 +223,7 @@ int main(){
                 case LEFT: movePiece(-1, 0, 0); break;
                 case RIGHT: movePiece(1, 0, 0); break;
                 case SPACE: while(movePiece(0,1,0)); break; // hard drop
+                case 'c': switchToHold(); break;
             }
         }
 
@@ -310,6 +314,19 @@ void printBoard(){
 
         
     }
+
+    printf("Hold:\n");
+    for(int i=0; i<5; i++){
+        for(int j = 0; j<5; j++){
+            if(holdPiece.shape != -1 && shapes[holdPiece.shape].view[holdPiece.rotation][i][j]){
+                printf("%c%c", 219, 219);
+            } else {
+                printf("  ");
+            }
+        }
+        printf("\n");
+    }
+
     printf("\nScore: %d\n", score);
 }
 
@@ -366,4 +383,19 @@ void updateBoard(){
         }
     }
     score += cleared*100;
+}
+
+void switchToHold(){
+    if(holdPiece.shape == -1){
+        holdPiece = myPiece; 
+        initializePiece();
+    }
+    else{
+        piece temp = myPiece;
+        myPiece = holdPiece;
+        holdPiece = temp;
+        myPiece.x = WIDTH/2 - 2;
+        myPiece.y = 0;
+        myPiece.rotation = 0;
+    }
 }
