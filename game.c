@@ -1,10 +1,16 @@
 #include <stdio.h>
-#include <unistd.h>
 #include <conio.h>
+#include <windows.h>
 
 #define WIDTH 10
 #define HEIGHT 20
-#define UPDATEDELAY 1500000
+#define UPDATEDELAY 300 // milliseconds
+
+#define UP 72
+#define DOWN 80
+#define LEFT 75
+#define RIGHT 77
+#define SPACE 32
 
 typedef struct {
     int rotations;
@@ -126,7 +132,7 @@ Shape shapes[7] = {
         }
     }},
 
-    // Zig Block (S)
+    // S Block
     {2, {
         {
             {0,0,0,0,0},
@@ -144,7 +150,7 @@ Shape shapes[7] = {
         }
     }},
 
-    // Zag Block (Z)
+    // Z Block
     {2, {
         {
             {0,0,0,0,0},
@@ -162,7 +168,7 @@ Shape shapes[7] = {
         }
     }},
 
-    // Square Block (O)
+    // O Block
     {1, {
         {
             {0,0,0,0,0},
@@ -175,238 +181,171 @@ Shape shapes[7] = {
 };
 
 int board[HEIGHT][WIDTH];
-int updateDelayCounter = 0;
 int score = 0;
 char gameOpen = 1;
-// int current_x = WIDTH/2;
-// int current_y = 0;
 
 typedef struct{
     char shape;
     char rotation;
     int x;
     int y;
-
 } piece;
 
-piece myPiece = {.shape = 1, .rotation=1, .x = WIDTH/2, .y=0};
+piece myPiece = {.shape = 0, .rotation = 0, .x = WIDTH/2, .y = 0};
 
+// Function prototypes
 void initializeBoard();
 void printBoard();
 void updateBoard();
 void clearRow(int row);
-char fallCheck();
-void initializePiece();
-void drawPiece();
-void removePiece();
-void updatePiece();
 char moveCheck(int x, int y, int rotation);
+char movePiece(int x, int y, int rotation);
+void initializePiece();
 
-int main(int argc, char * argv[]){
+int main(){
 
     initializeBoard();
-    printBoard();
     initializePiece();
-    usleep(UPDATEDELAY);
-    // drawPiece();
 
     while(gameOpen){
-        
 
-        if (_kbhit()) {             // check if a key is pressed
-            char c = _getch();      // get char without waiting for Enter
-            if (c == 'q'){
-                gameOpen = 0;
-                
+        if(_kbhit()){
+            char c = _getch();
+            if(c == 0 || c == -32) c = _getch(); // handle arrow keys
+
+            switch(c){
+                case 'q': gameOpen = 0; break;
+                case UP: movePiece(0, 0, 1); break;
+                case DOWN: movePiece(0, 1, 0); break;
+                case LEFT: movePiece(-1, 0, 0); break;
+                case RIGHT: movePiece(1, 0, 0); break;
+                case SPACE: while(movePiece(0,1,0)); break; // hard drop
             }
         }
 
-        
-        // drawPiece();
+        // automatically move piece down
         if(moveCheck(0, 1, 0)){
-            updatePiece();  
-            printf("updated\n");  
+            myPiece.y++;
+        } else {
+            // piece landed → fix it on board
+            for(int i=0; i<5; i++){
+                for(int j=0; j<5; j++){
+                    if(shapes[myPiece.shape].view[myPiece.rotation][i][j]){
+                        int y = myPiece.y + i;
+                        int x = myPiece.x + j;
+                        if(y>=0 && y<HEIGHT && x>=0 && x<WIDTH){
+                            board[y][x] = 1;
+                        }
+                    }
+                }
+            }
+            // clear lines
+            updateBoard();
+            // new piece
+            initializePiece();
+            if(!moveCheck(0,0,0)){
+                gameOpen = 0; // game over
+            }
         }
-        
-        updateBoard();
-        
+
+        printBoard();
+        Sleep(UPDATEDELAY);
     }
 
-    printf("Game Exited\n");
-    
+    printf("Game Over!\n");
+    return 0;
 }
-
 
 void initializeBoard(){
-    for(int i=0; i<HEIGHT; i++){
-        for(int j = 0; j<WIDTH; j++){
-            if(i>10){
-                board[i][j] = 1;
-            }else{
-                board[i][j] = 0;
-            }
+    for(int i=0;i<HEIGHT;i++){
+        for(int j=0;j<WIDTH;j++){
+            board[i][j] = 0;
         }
     }
-
-    board[8][8] = 1;
-    board[7][7] = 1;
-    board[6][6] = 1;
-    board[11][5] = 0;
-}
-
-void printBoard(){
-
-    printf("\033[H\033[J");
-
-    for(int i = 0; i<HEIGHT; i++){
-        for(int j = 0; j< WIDTH; j++){
-
-            if(board[i][j] == 1){
-                printf("|%c%c", 219, 219);
-            }else{
-                printf("|  ");
-            }
-        }
-        printf("|\n");
-    }
-    printf("\n");
-    printf("Score: %d\n", score);
-}
-
-void updateBoard(){
-
-    
-
-    int clearedLines = 0;
-
-    for(int i = HEIGHT-1; i>0; i--){
-        char found = 1;
-        for(int j = 0; j<WIDTH; j++ ){
-            if(board[i][j] == 0){
-                found = 0;
-                
-            }
-        }
-
-        if(found){
-            clearedLines ++;
-            clearRow(i);
-            i = HEIGHT;
-        }
-    }
-
-    score += clearedLines * 100;
-
-    if(fallCheck()){
-        for(int i = HEIGHT-1; i> 0; i--){
-            for(int j = 0; j<WIDTH; j++){
-                board[i][j] = board[i-1][j];
-            }
-        }
-        
-        for(int j = 0; j<WIDTH; j++){
-            board[0][j] = 0;
-        }
-
-        
-    }
-    
-    drawPiece();
-    printBoard();
-    usleep(UPDATEDELAY);
-    
-
-
-}
-
-void clearRow(int row){
-    for(int i = row; i> 0; i--){
-        for(int j = 0; j<WIDTH; j++){
-            board[i][j] = board[i-1][j];
-        }
-    }
-
-    for(int j = 0; j<WIDTH; j++){
-        board[0][j] = 0;
-    }
-}
-
-char fallCheck(){
-    for(int j = 0; j<WIDTH; j++){
-        if(board[HEIGHT-1][j] == 1){
-            return 0;
-        }
-    }
-    return 1;
 }
 
 void initializePiece(){
-    // int current_x = WIDTH/2;
-    // int current_y = 0;
-    myPiece.x = WIDTH/2;
+    myPiece.shape = rand() % 7;
+    myPiece.rotation = 0;
+    myPiece.x = WIDTH/2 - 2;
     myPiece.y = 0;
 }
 
-void drawPiece(){
-    for(int i = 0; i < 5; i++){
-        for (int j = 0; j< 5; j++){
-            if (shapes[myPiece.shape].view[myPiece.rotation][i][j] == 1){
-                board[myPiece.y + i][myPiece.x + j] = 1;
+void printBoard(){
+    printf("\033[H\033[J"); // clear terminal
+
+    for(int i=0;i<HEIGHT;i++){
+        for(int j=0;j<WIDTH;j++){
+            char cell = board[i][j];
+
+            // Overlay current piece
+            int relY = i - myPiece.y;
+            int relX = j - myPiece.x;
+            if(relY >=0 && relY <5 && relX >=0 && relX <5){
+                if(shapes[myPiece.shape].view[myPiece.rotation][relY][relX] == 1){
+                    cell = 1;
+                }
             }
+
+            if(cell) printf("|%c%c", 219, 219);
+            else printf("|  ");
         }
+        printf("|\n");
     }
-}
-
-void removePiece(){
-    for(int i = 0; i<5; i++){
-        for (int j =0; j<5; j++){
-            if (shapes[myPiece.shape].view[myPiece.rotation][i][j] == 1){
-                board[myPiece.y + i][myPiece.x + j] = 0;
-            }
-        }
-    }
-}
-void updatePiece(){
-
-    removePiece();
-
-    myPiece.y ++;
+    printf("\nScore: %d\n", score);
 }
 
 char moveCheck(int x, int y, int rotation){
-    int temp_x = myPiece.x + x;
-    int temp_y = myPiece.y + y;
-    int temp_rotation = (myPiece.rotation + rotation) % shapes[myPiece.shape].rotations;
-    
-    piece tempPiece = {.shape = myPiece.shape, .x=temp_x, .y=temp_y, .rotation=temp_rotation};
+    int tempX = myPiece.x + x;
+    int tempY = myPiece.y + y;
+    int tempRot = (myPiece.rotation + rotation) % shapes[myPiece.shape].rotations;
 
-    removePiece();
+    for(int i=0;i<5;i++){
+        for(int j=0;j<5;j++){
+            if(shapes[myPiece.shape].view[tempRot][i][j]){
+                int boardX = tempX + j;
+                int boardY = tempY + i;
 
-    for(int i =0; i<5; i++){
-        for (int j = 0; j<5; j++){
-            if(shapes[tempPiece.shape].view[tempPiece.rotation][i][j] == 1){
-                int temp_board_y = tempPiece.y + i;
-                int temp_board_x = tempPiece.x + j;
-
-                
-
-                if(temp_board_y < 0 || temp_board_y >= HEIGHT || temp_board_x < 0 || temp_board_x >= WIDTH || ((board[temp_board_y][temp_board_x] == 1))){
-                    printf("collision at %d, %d\n", temp_board_x, temp_board_y);
-                    drawPiece();
-                    return 0;
-                }
-
+                if(boardX<0 || boardX>=WIDTH || boardY<0 || boardY>=HEIGHT) return 0;
+                if(board[boardY][boardX]) return 0;
             }
         }
     }
-
-    drawPiece();
 
     return 1;
 }
 
+char movePiece(int x, int y, int rotation){
+    if(moveCheck(x,y,rotation)){
+        myPiece.x += x;
+        myPiece.y += y;
+        myPiece.rotation = (myPiece.rotation + rotation) % shapes[myPiece.shape].rotations;
+        return 1;
+    }
+    return 0;
+}
 
+void clearRow(int row){
+    for(int i=row;i>0;i--){
+        for(int j=0;j<WIDTH;j++){
+            board[i][j] = board[i-1][j];
+        }
+    }
+    for(int j=0;j<WIDTH;j++) board[0][j] = 0;
+}
 
-
-
-
+void updateBoard(){
+    int cleared = 0;
+    for(int i=HEIGHT-1;i>=0;i--){
+        char full = 1;
+        for(int j=0;j<WIDTH;j++){
+            if(board[i][j] == 0) full = 0;
+        }
+        if(full){
+            cleared++;
+            clearRow(i);
+            i++; // recheck same row after shift
+        }
+    }
+    score += cleared*100;
+}
